@@ -1,1 +1,1 @@
-Some scripts written for [bitburner|https://danielyxie.github.io/bitburner]
+Some scripts written for [bitburner](https://danielyxie.github.io/bitburner)
