@@ -154,8 +154,6 @@ class Server {
 		if (!compare(await this.workActual(),workOrder)) {
 			await this.ns.killall(this.name)
 			for (const order of workOrder) {
-				await this.ns.tprint(this.name)
-				await this.ns.tprint(order)
 				await this.ns.scp(order.filename, this.name)
 				await this.ns.exec(order.filename, this.name, order.threads, ...order.args) > 0
 			}
@@ -186,7 +184,6 @@ function threadBudget(ns, home, file, ratios) {
 
 async function manageWorkers(ns, home, ratio) {
 	var target = appraise(home)
-	ns.tprint(target.name)
 
 	var budget = threadBudget(ns, home, 'grow.js', ratio)
 
