@@ -7,10 +7,12 @@ export async function main(ns) {
 		if (!selectServer(home, 'darkweb') && ns.getServerMoneyAvailable('home') > 200000) ns.run('purchaseTor.js')
 		home.hackingPrograms.filter(program => !ns.fileExists(program.file)).forEach(program => { if (ns.purchaseProgram(program.file)) ns.tprint(program.file) })
 
-		selectServer(home, 'powerhouse-fitness').installBackdoor
+		await selectServer(home, 'powerhouse-fitness').installBackdoor
 
 		// Nuke every server that we can
-		home.familyOf().filter(server => !server.hasRoot && server.isNukable).forEach(server => server.root())
+		for (server of home.familyOf().filter(server => !server.hasRoot && server.isNukable)) {
+			await server.root()
+		}
 
 		// Backdoor the servers that need to be backdoored for faction access
 		for (const faction of hackingFaction) {
@@ -131,12 +133,12 @@ class Server {
 		return list
 	}
 
-	root() {
+	async root() {
 		if (!this.isNukable) return false
 		while (this.openPorts < this.portsRequired) {
 			program = this.hackingPrograms[this.openPorts];
 			if (this.ns.fileExists(program.file)) {
-				program.open(this.name);
+				await program.open(this.name);
 			} else {
 				break;
 			}
@@ -149,13 +151,13 @@ class Server {
 	}
 
 	async instruct(workOrder) {
-		this.ns.tprint(workOrder)
-		if (this.workActual() != workOrder) {
+		if (!compare(await this.workActual(),workOrder)) {
 			await this.ns.killall(this.name)
-			for (order of workOrder) {
-				this.ns.tprint(order)
+			for (const order of workOrder) {
+				await this.ns.tprint(this.name)
+				await this.ns.tprint(order)
 				await this.ns.scp(order.filename, this.name)
-				if (await this.ns.exec(order.filename, this.name, order.threads, ...order.args) > 0) this.target = target
+				await this.ns.exec(order.filename, this.name, order.threads, ...order.args) > 0
 			}
 		}
 	}
@@ -196,18 +198,36 @@ async function manageWorkers(ns, home, ratio) {
 			if (method === undefined) break
 
 			if (budget[method] > threadSpace) {
-				workOrder.push({ filename: method, threads: threadSpace, args: ['target'] })
+				workOrder.push({ filename: method, threads: threadSpace, args: [target.name] })
 				budget[method] -= threadSpace
 				threadSpace = 0
 			} else {
-				workOrder.push({ filename: method, threads: budget[method], args: ['target'] })
+				workOrder.push({ filename: method, threads: budget[method], args: [target.name] })
 				threadSpace -= budget[method]
 				budget[method] = 0
 			}
 			server.instruct(workOrder)
 		}
 
-
-		//{"filename":"grow.js","threads":146,"args":["catalyst"],"pid":550}
 	}
+}
+
+function compare(a, b) {
+	var areEqual = true
+	if (typeof a !== typeof b) {
+		areEqual = false
+	} else {
+		if (typeof a === 'object') {
+			if (Array.isArray(a)) {
+				for (const index in a) {
+					areEqual &&= compare(a[index], b[index])
+				}
+			} else {
+				areEqual &&= compare(Object.entries(a), Object.entries(b))
+			}
+		} else {
+			areEqual &&= (a === b)
+		}
+	}
+	return areEqual
 }
