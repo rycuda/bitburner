@@ -206,7 +206,7 @@ async function manageWorkers(ns, home, ratio) {
 				threadSpace -= budget[method]
 				budget[method] = 0
 			}
-			server.instruct(workOrder)
+			await server.instruct(workOrder)
 		}
 
 	}
